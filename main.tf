@@ -2,9 +2,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# -----------------------
 # VPC
-# -----------------------
+# Creates a VPC 
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -15,6 +14,7 @@ resource "aws_vpc" "main" {
 }
 
 # Internet Gateway
+# Creates an internet gateway
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
@@ -25,6 +25,7 @@ resource "aws_internet_gateway" "gw" {
 }
 
 # Route Table
+# creates a custom route table
 
 resource "aws_route_table" "rt" {
   vpc_id = aws_vpc.main.id
@@ -39,9 +40,8 @@ resource "aws_route_table" "rt" {
   }
 }
 
-# -----------------------
 # Subnets
-# -----------------------
+# the load balancer requires at least two 2 public subnets in different availability zones
 
 resource "aws_subnet" "subnet_a" {
   vpc_id                  = aws_vpc.main.id
@@ -78,9 +78,9 @@ resource "aws_route_table_association" "rta_b" {
   route_table_id = aws_route_table.rt.id
 }
 
-# -----------------------
 # Security Groups
-# -----------------------
+# allows ingress traffic port through tcp port 80
+# allows everything egress traffic 
 
 resource "aws_security_group" "web_sg" {
   name        = "web-sg"
@@ -121,9 +121,8 @@ resource "aws_security_group" "lb_sg" {
   }
 }
 
-# -----------------------
 # Load Balancer
-# -----------------------
+# routes to created instances 
 
 resource "aws_lb" "app_lb" {
   name               = "terraform-workshop-lb"
@@ -138,6 +137,7 @@ resource "aws_lb" "app_lb" {
 }
 
 # Target Group
+# decides which instance receives the traffic from the load balancer 
 
 resource "aws_lb_target_group" "tg" {
   name     = "terraform-tg"
@@ -147,6 +147,7 @@ resource "aws_lb_target_group" "tg" {
 }
 
 # Listener
+# listens for connections on port 80 and forwards traffic to target group
 
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.app_lb.arn
@@ -159,9 +160,8 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
-# -----------------------
 # EC2 Instances
-# -----------------------
+# two instances are created
 
 resource "aws_instance" "web" {
   count = 2
@@ -195,9 +195,7 @@ resource "aws_lb_target_group_attachment" "attach" {
   port             = 80
 }
 
-# -----------------------
 # AMI Data Source
-# -----------------------
 
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -209,9 +207,8 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# -----------------------
 # Outputs
-# -----------------------
+# Load balancers dns address
 
 output "load_balancer_dns" {
   value = aws_lb.app_lb.dns_name
